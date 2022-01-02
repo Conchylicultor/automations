@@ -297,7 +297,7 @@ def main():
     movies = [movies_extra.get(m.id, m) for m in movies]
 
     # Fetch extra movies
-    extra_movies = [m.replace_with_metadata().to_json() for m in movies[:1200]]
+    extra_movies = [m.replace_with_metadata().to_json() for m in movies]
 
     # Save output
     out_path = pathlib.Path(__file__).parent / "cache.jsonl"
