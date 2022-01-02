@@ -1,0 +1,4 @@
+etils[epy]
+pandas
+requests
+plotly
