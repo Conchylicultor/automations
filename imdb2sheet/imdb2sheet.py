@@ -251,7 +251,8 @@ class OmdbAPI:
     """OMDB API."""
 
     def query(self, imdb_id):
-        api_key = os.environ["OMDB_KEY"]
+        if not (api_key := os.environ.get("OMDB_KEY")):
+            raise ValueError("Missing OMDB_KEY")
         url = f"http://www.omdbapi.com/"
         url = _add_arguments(
             url,
