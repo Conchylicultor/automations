@@ -1,0 +1,25 @@
+name: Automated
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */1 * * *"
+
+jobs:
+  automation:
+    name: Run automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+        cache: 'pip'
+        cache-dependency-path: 'requirements.txt'
+    
+    - run: pip install -r requirements.txt
+    - run: python crons/todo.py
+      env:
+        NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}

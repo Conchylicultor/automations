@@ -18,7 +18,7 @@ Json = Any
 @functools.cache
 def get_client(token: str | None = None) -> notion_client.Client:
     options = notion_client.client.ClientOptions(
-        auth=os.environ["NOTION_API_SPORT"],
+        auth=os.environ["NOTION_API_TOKEN"],
     )
     return notion_client.Client(options)
 
