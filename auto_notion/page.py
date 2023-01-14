@@ -7,6 +7,8 @@ import datetime
 import functools
 from typing import Self
 
+import notion_client
+
 from auto_notion import database
 from auto_notion import property as propertylib
 from auto_notion.typing import Json
@@ -63,3 +65,7 @@ class DatabasePage:  # TODO(epot): 2 class for DB page and non-db page
             db=self.db,
             page=self,
         )
+
+    @property
+    def api(self) -> notion_client.Client:
+        return self.db.api

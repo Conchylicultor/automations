@@ -89,14 +89,14 @@ class PropertiesBase(Generic[_PropT]):
     def __init__(self, state: dict[str, _PropT]):
         object.__setattr__(self, "_props", state)
 
-    def __dir__(self) -> list[str]:
-        return list(self._props)
-
     def __repr__(self) -> str:
         return epy.Lines.make_block(
             type(self).__qualname__,
-            {k: v.value for k, v in self._props.items()},
+            {k: v.name for k, v in self._props.items()},
         )
+
+    def __dir__(self) -> list[str]:
+        return list(self._props)
 
     def __getattr__(self, key: str) -> _PropT:
         return self._props[key]

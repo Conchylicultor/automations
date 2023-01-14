@@ -10,6 +10,10 @@ from auto_notion import page as pagelib
 from auto_notion import property_info, utils
 from auto_notion.typing import Json
 
+if True:
+    # Circular import
+    from auto_notion import filters as filterslib
+
 
 class Database:
 
@@ -33,12 +37,22 @@ class Database:
     def __iter__(self) -> DatabaseIterator:
         return DatabaseIterator(self)
 
+    def __getitem__(self, filters: filterslib.Filter) -> DatabaseIterator:
+        return DatabaseIterator(self, filter=filters)
+
+    @property
+    def filters(self) -> filterslib.FilterProperties:
+        return filterslib.FilterProperties.from_json(
+            self._retrive["properties"],
+            db=self,
+        )
+
     # TODO: Custom __repr__
 
 
 class DatabaseIterator:
 
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, *, filter: filterslib.Filter | None = None):
         self._db = db
         # Could use
         # from notion_client.helpers import iterate_paginated_api
@@ -46,6 +60,10 @@ class DatabaseIterator:
         self._results = collections.deque()
         self._next_cursor = None
         self._has_more = True
+        self._filter = filter
+
+        if filter is not None and not isinstance(filter, filterslib.Filter):
+            raise TypeError(f"Invalid filter: {filter!r}")
 
     def __iter__(self) -> DatabaseIterator:
         return self
@@ -63,13 +81,20 @@ class DatabaseIterator:
                     # filter_properties
                     # page_size
                     # sorts
-                    # filter
+                    filter=self._json_filter,
                 )
                 self._results.extend(results["results"])
                 self._next_cursor = results["next_cursor"]
                 self._has_more = results["has_more"]
         page = pagelib.DatabasePage.from_json(self._results.popleft(), db=self._db)
         return PropertyProxy(page)
+
+    @property
+    def _json_filter(self) -> Json:
+        if self._filter is None:
+            return None
+        else:
+            return self._filter.to_json()
 
 
 class PropertyProxy:

@@ -29,15 +29,27 @@ class Property(property_base.PropertyBase, Generic[_T]):
 
     @property
     def value(self) -> _T:
-        return self.parse(self.json[self.TYPE])
+        val = self.json[self.TYPE]
+        if val is None:
+            return val
+        else:
+            return self.parse(val)
 
     @value.setter
     def value(self, new_val: _T) -> None:
+        if new_val is not None:  # Otherwise clear the field
+            new_val = self.serialize(new_val)
+
         # TODO(epot): Validate the value (type, range,...)
-        new_page = self.api.pages.update(
-            self.page.id,
-            properties={self.id: self.serialize(new_val)},
-        )
+        query = {self.id: {self.type: new_val}}
+        try:
+            new_page = self.api.pages.update(
+                self.page.id,
+                properties=query,
+            )
+        except Exception as e:
+            e.add_note(f"query: {query}")
+            raise
         self.json[self.TYPE] = new_page["properties"][self.name][self.TYPE]
 
     @functools.cached_property
@@ -96,15 +108,24 @@ class Checkbox(_Value[bool]):
     TYPE = "checkbox"
 
 
-class Select(Property[epy.StrEnum]):
+class Select(Property[epy.StrEnum | None]):
     TYPE = "select"
+
+    def parse(self, value: Json) -> str:
+        return value["name"]
+
+    def serialize(self, value) -> Json:
+        if value not in self.db.props._props[self.snake_name].choices:
+            # TODO: difflib for hint ?
+            raise ValueError(f"Unexpected {self.name!r} value: {value!r}.")
+        return {"name": value}
 
 
 class MultiSelect(Property[list[epy.StrEnum]]):
     TYPE = "multi_select"
 
 
-class Date(Property[datetime.datetime]):
+class Date(Property[datetime.datetime | None]):
     TYPE = "date"
 
     def parse(self, value: Json):
@@ -137,3 +158,9 @@ class LastEditedBy(_Time):
 
 class Properties(property_base.PropertiesBase[Property]):
     _PROP_CLS = Property
+
+    def __repr__(self) -> str:
+        return epy.Lines.make_block(
+            type(self).__qualname__,
+            {k: v.value for k, v in self._props.items()},
+        )
