@@ -2,4 +2,4 @@
 
 from __future__ import annotations
 
-from notion_api.database import Database
+from auto_notion.database import Database

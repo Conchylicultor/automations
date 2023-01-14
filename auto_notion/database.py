@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import collections
 import functools
+from typing import Any
 
-from notion_api import page, property, utils
-from notion_api.typing import Json
+from auto_notion import page as pagelib
+from auto_notion import property_info, utils
+from auto_notion.typing import Json
 
 
 class Database:
@@ -22,11 +24,16 @@ class Database:
         return self.api.databases.retrieve(self.id)
 
     @functools.cached_property
-    def props(self) -> property.PropertiesInfo:
-        return property.PropertiesInfo.from_json(self._retrive["properties"])
+    def props(self) -> property_info.PropertiesInfo:
+        return property_info.PropertiesInfo.from_json(
+            self._retrive["properties"],
+            db=self,
+        )
 
     def __iter__(self) -> DatabaseIterator:
         return DatabaseIterator(self)
+
+    # TODO: Custom __repr__
 
 
 class DatabaseIterator:
@@ -43,7 +50,7 @@ class DatabaseIterator:
     def __iter__(self) -> DatabaseIterator:
         return self
 
-    def __next__(self) -> page.Page:
+    def __next__(self) -> PropertyProxy:
         if not self._results:
             if not self._has_more:
                 # No more results
@@ -61,4 +68,27 @@ class DatabaseIterator:
                 self._results.extend(results["results"])
                 self._next_cursor = results["next_cursor"]
                 self._has_more = results["has_more"]
-        return page.DatabasePage.from_json(self._results.popleft(), db=self._db)
+        page = pagelib.DatabasePage.from_json(self._results.popleft(), db=self._db)
+        return PropertyProxy(page)
+
+
+class PropertyProxy:
+    """Wrap the page to allow easy access to property fields."""
+
+    def __init__(self, page):
+        object.__setattr__(self, "_page", page)
+
+    # Could merge with PropertiesBase (by unifying `get_props_fn`)
+
+    def __dir__(self) -> list[str]:
+        return list(self._page.props._props) + ["INFO"]
+
+    def __getattr__(self, key: str) -> Any:
+        return self._page.props._props[key].value
+
+    def __setattr__(self, key: str, value: Any) -> None:
+        self._page.props._props[key].value = value
+
+    @property
+    def INFO(self) -> pagelib.DatabasePage:
+        return self._page

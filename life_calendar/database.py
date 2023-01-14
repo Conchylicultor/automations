@@ -7,7 +7,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 
-import notion_api
+import auto_notion
 
 CALENDAR_ID = "a70ad02a9ba1460089a7168fbfe2bd33"
 YEAR_ZERO = 1992
@@ -15,7 +15,7 @@ YEAR_ZERO = 1992
 
 class LifeCalendarDb:
     def __init__(self) -> None:
-        self.db = notion_api.Database(CALENDAR_ID)
+        self.db = auto_notion.Database(CALENDAR_ID)
         # Load all events, sorted per start date
         events = [LifeEvent.from_row(row) for row in self.db.pages]
         # events = [e for e in events if e.start]  # Filter event without start
@@ -51,7 +51,7 @@ class LifeEvent:
     lieu: None = None
 
     @classmethod
-    def from_row(cls, row: notion_api.Page):
+    def from_row(cls, row: auto_notion.Page):
         return cls(
             desc=row["Name"],
             start=row["Start"],
