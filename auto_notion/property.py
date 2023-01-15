@@ -100,7 +100,7 @@ class _Value(Property[_T]):
         return value
 
 
-class Number(_Value[float | int]):
+class Number(_Value["float | int"]):
     TYPE = "number"
 
 
@@ -108,7 +108,7 @@ class Checkbox(_Value[bool]):
     TYPE = "checkbox"
 
 
-class Select(Property[epy.StrEnum | None]):
+class Select(Property["epy.StrEnum | None"]):
     TYPE = "select"
 
     def parse(self, value: Json) -> str:
@@ -121,11 +121,11 @@ class Select(Property[epy.StrEnum | None]):
         return {"name": value}
 
 
-class MultiSelect(Property[list[epy.StrEnum]]):
+class MultiSelect(Property["list[epy.StrEnum]"]):
     TYPE = "multi_select"
 
 
-class Date(Property[datetime.datetime | None]):
+class Date(Property["datetime.datetime | None"]):
     TYPE = "date"
 
     def parse(self, value: Json):
