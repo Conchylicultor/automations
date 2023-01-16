@@ -124,6 +124,17 @@ class Select(Property["epy.StrEnum | None"]):
 class MultiSelect(Property["list[epy.StrEnum]"]):
     TYPE = "multi_select"
 
+    def parse(self, value: Json) -> list[str]:
+        return [v["name"] for v in value]
+
+    def serialize(self, value) -> Json:
+        if not isinstance(value, (list, tuple)):
+            raise TypeError(f"Unexpected {self.name!r} value (not a list): {value!r}")
+        if not all(v in self.db.props._props[self.snake_name].choices for v in value):
+            # TODO: difflib for hint ?
+            raise ValueError(f"Unexpected {self.name!r} value: {value!r}.")
+        return [{"name": v} for v in value]
+
 
 class Date(Property["datetime.datetime | None"]):
     TYPE = "date"
