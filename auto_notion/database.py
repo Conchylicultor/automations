@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import functools
+import typing
 from typing import Any
 
 from auto_notion import page as pagelib
@@ -13,6 +14,9 @@ from auto_notion.typing import Json
 if True:
     # Circular import
     from auto_notion import filters as filterslib
+
+if typing.TYPE_CHECKING:
+    import pandas as pd
 
 
 class Database:
@@ -34,11 +38,15 @@ class Database:
             db=self,
         )
 
-    def __iter__(self) -> DatabaseIterator:
-        return DatabaseIterator(self)
+    def __iter__(self) -> DatabaseView:
+        return DatabaseView(self)
 
-    def __getitem__(self, filters: filterslib.Filter) -> DatabaseIterator:
-        return DatabaseIterator(self, filter=filters)
+    def __getitem__(self, filters: filterslib.Filter) -> DatabaseView:
+        return DatabaseView(self, filter=filters)
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return DatabaseView(self).df
 
     @property
     def filters(self) -> filterslib.FilterProperties:
@@ -50,7 +58,7 @@ class Database:
     # TODO: Custom __repr__
 
 
-class DatabaseIterator:
+class DatabaseView:
 
     def __init__(self, db: Database, *, filter: filterslib.Filter | None = None):
         self._db = db
@@ -65,7 +73,7 @@ class DatabaseIterator:
         if filter is not None and not isinstance(filter, filterslib.Filter):
             raise TypeError(f"Invalid filter: {filter!r}")
 
-    def __iter__(self) -> DatabaseIterator:
+    def __iter__(self) -> DatabaseView:
         return self
 
     def __next__(self) -> PropertyProxy:
@@ -90,11 +98,28 @@ class DatabaseIterator:
         return PropertyProxy(page)
 
     @property
+    def df(self) -> pd.DataFrame:
+        all_rows = list(self)
+
+        import pandas as pd
+
+        return pd.DataFrame(
+            {
+                k: _extract_all_values_for_field(all_rows, k)
+                for k in all_rows[0].INFO.props._props.keys()
+            }
+        )
+
+    @property
     def _json_filter(self) -> Json:
         if self._filter is None:
             return None
         else:
             return self._filter.to_json()
+
+
+def _extract_all_values_for_field(rows: PropertyProxy, key: str):
+    return [getattr(r, key) for r in rows]
 
 
 class PropertyProxy:
