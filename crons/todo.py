@@ -88,8 +88,6 @@ OPTION_TO_DELTA = {
 
 
 def main():
-    TODAY_DATE = datetime.datetime.today()
-
     db = auto_notion.Database("989b65ec51244c8ba318a982717b085d")
 
     print("Processing rows...")
@@ -97,22 +95,20 @@ def main():
     # TODO(epot): Should filter done & archived
     for row in db:
         if row.done:
-            if not row.archived:
-                row.archived = TODAY_DATE
-        else:
-            if not row.snooze:
-                continue
-            if row.snooze not in OPTION_TO_DELTA:
-                raise ValueError(f"Unexpected snooze value: {row.snooze!r}")
+            continue
+        if not row.snooze:
+            continue
+        if row.snooze not in OPTION_TO_DELTA:
+            raise ValueError(f"Unexpected snooze value: {row.snooze!r}")
 
-            delta_fn = OPTION_TO_DELTA[row.snooze]
-            if delta_fn is None:
-                continue
+        delta_fn = OPTION_TO_DELTA[row.snooze]
+        if delta_fn is None:
+            continue
 
-            reminder = delta_fn().date()
-            print(f"{row.snooze} -> {reminder}")
-            row.reminder = reminder
-            row.snooze = None
+        reminder = delta_fn().date()
+        print(f"{row.snooze} -> {reminder}")
+        row.reminder = reminder
+        row.snooze = None
     print("Processing done!")
 
 
